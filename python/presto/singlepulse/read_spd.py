@@ -92,7 +92,8 @@ class spd(object):
         The time at which to start plotting the dispersed reference line
     """
     def __init__(self, spd_file):
-        dd = dict(_np.load(spd_file))
+        # Below, by default allow_pickle is False and it causes error, do you know why ???
+        dd = dict(_np.load(spd_file, allow_pickle=True))
         self.data_zerodm = dd['Data_zerodm']
         self.data_zerodm_dedisp = dd['Data_dedisp_zerodm']
         self.data_nozerodm = dd['Data_nozerodm']
@@ -153,7 +154,7 @@ class spd(object):
         
         # Get variance from the half of the waterfall plot that definitely should not contain the pulse
         # (which is 1/4 of the way into the plot)
-        self.varprof = _np.var(self.data_zerodm_dedisp.sum(axis=0)[(self.waterfall_nbins/2):])
+        self.varprof = _np.var(self.data_zerodm_dedisp.sum(axis=0)[int(self.waterfall_nbins/2):])  # integer index
 
         #### Print the spd information ####
         sys.stdout.write("\n")

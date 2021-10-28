@@ -11,6 +11,9 @@ from presto.presto.prestoswig import *
 import numpy as Num
 from presto import psr_utils
 from presto import psrfits
+# add filterbank module
+from presto import filterbank
+import warnings
 
 
 def read_inffile(filename):
@@ -38,6 +41,10 @@ def bary_to_topo(infofilenm, rawdatafile=False, ephem="DE200"):
    elif infofilenm[-5:]==".fits":
        infofilenm = infofilenm
        filetype = 'PSRFITS'
+    # add the filterbank file type so code doesn't crash
+   elif infofilenm.endswith(".fil"):
+       infofilenm = infofilenm
+       filetype = 'FILTERBANK'
    else:
        raise ValueError("file type not recognized. Must be .inf, or .fits")
    if filetype=="inf": 
@@ -65,6 +72,8 @@ def bary_to_topo(infofilenm, rawdatafile=False, ephem="DE200"):
        T = rawdatafile.specinfo.T
        dt = 10.0
        tto = rawdatafile.specinfo.start_MJD[0]
+       # Actually psr_utils.SECPERDAY throws an error hence I have hardcoded that in the
+       # filterbank case, maybe it should be updated here as well???
        tts = Num.arange(tto, tto + (T + dt) / psr_utils.SECPERDAY, dt / psr_utils.SECPERDAY)
        nn = len(tts)
        bts = Num.zeros(nn, 'd')
@@ -79,8 +88,37 @@ def bary_to_topo(infofilenm, rawdatafile=False, ephem="DE200"):
        else:
           print("Telescope not recognized.")
           return 0
-   barycenter(tts, bts, vel, nn, ra, dec, tel, ephem)
+      
+   elif filetype=="FILTERBANK":
+       # Get parameters needed for barycentric correction in case of 
+       # filterbank file. Here telescope name is hardcoded to GBT because the 
+       # filterbank module doesn't seem to read the telescope name from the 
+       # file header. 
+       if not rawdatafile:
+           rawdatafile = filterbank.FilterbankFile(infofilenm)
+       T = rawdatafile.nspec * rawdatafile.dt
+       dt = 10.0
+       tto = rawdatafile.tstart
+       tts = Num.arange(tto, tto + (T + dt) / 86400, dt / 86400)  # 86400 are seconds per day
+       nn = len(tts)
+       bts = Num.zeros(nn, 'd')
+       vel = Num.zeros(nn, 'd')
+       ra_j = rawdatafile.src_raj
+       dec_j = rawdatafile.src_dej
+       ra = psr_utils.coord_to_string(ra_j // 10000, ra_j % 10000 // 100, ra_j % 10000 % 100)
+       if dec_j > 0:
+           dec = psr_utils.coord_to_string(dec_j // 10000, dec_j % 10000 // 100, dec_j % 10000 % 100)
+       elif dec_j < 0:
+           dec_j = -1*dec_j  # take the magnitude to convet properly
+           dec = psr_utils.coord_to_string(-1*( dec_j // 10000), dec_j % 10000 // 100, dec_j % 10000 % 100)
+       tel = 'GB'
+       warnings.warn("Barycenter time will be wrong because telescope name header not read correctly.\
+                     Assuming GBT as the telescope location")
+
+   # There was a mismatch in number of parameters passed to barycenter function. 
+   # I think this must be crashing for psrfits as well !!
+   barycenter(tts, bts, vel, ra, dec, tel, ephem)
    avgvel = Num.add.reduce(vel) / nn
    tts = Num.arange(nn, dtype='d') * dt
-   bts = (bts - bts[0]) * psr_utils.SECPERDAY
+   bts = (bts - bts[0]) * 86400  # 86400 are seconds per day
    return tts, bts

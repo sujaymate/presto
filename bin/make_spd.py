@@ -20,7 +20,7 @@ import optparse
 from presto import waterfaller
 from presto import psr_utils
 # todo: (gijs) plot_spd is a script, not a module.
-import plot_spd
+from presto.singlepulse import plot_spd  # it now imports the module insted of the script
 from presto.singlepulse import spcand as spcand
 from presto.singlepulse import spio as spio
 from presto import psrfits
@@ -117,8 +117,19 @@ def make_spd_from_file(spdcand, rawdatafile, \
 
 
                 # Array for Plotting Dedispersed waterfall plot - zerodm - OFF
-                spdcand.read_from_file(values[ii], rawdatafile.tsamp, rawdatafile.specinfo.N, \
-                                       rawdatafile.frequencies[0], rawdatafile.frequencies[-1], \
+                
+                # Choose meta data based on filetype
+                # This way the data is passed correctly for .fil and .psrfits
+                tsamp = rawdatafile.tsamp
+                freq_hi = rawdatafile.frequencies[0]
+                freq_lo = rawdatafile.frequencies[-1]
+                
+                if rawdatafile.filename.endswith(".fil"):
+                    nchans = rawdatafile.nchans
+                else:
+                    nchans = rawdatafile.specinfo.N
+                
+                spdcand.read_from_file(values[ii], tsamp, nchans, freq_hi, freq_lo, \
                                        rawdatafile, loc_pulse=loc_pulse, dedisp = True, \
                                        scaleindep = None, zerodm = None, mask = mask, \
                                        barytime=barytime, \
@@ -137,13 +148,35 @@ def make_spd_from_file(spdcand, rawdatafile, \
                                              spdcand.scaleindep, spdcand.width_bins, \
                                              spdcand.mask, maskfile, spdcand.bandpass_corr)
 
-                text_array = np.array([args[0], rawdatafile.specinfo.telescope, \
-                                       rawdatafile.specinfo.ra_str, rawdatafile.specinfo.dec_str, \
-                                       rawdatafile.specinfo.start_MJD[0], \
+                # Choose meta data based on filetype
+                # This way the data is passed correctly for .fil and .psrfits
+                if rawdatafile.filename.endswith(".fil"):
+                    # Telescope name is hardcoded because filterbank doesn't read if from the header
+                    # What to change in the filterbank.py so that it does read it ???
+                    telescope = "GBT"  
+                    ra = rawdatafile.src_raj
+                    dec = rawdatafile.src_dej
+                    # Above are floats need to convert to str for the array, done below
+                    ra_str = psr_utils.coord_to_string(ra // 10000, ra % 10000 // 100, ra % 10000 % 100)
+                    if dec > 0:
+                        dec_str = psr_utils.coord_to_string(dec // 10000, dec % 10000 // 100, dec % 10000 % 100)
+                    elif dec < 0:
+                        dec = -1*dec  # take the magnitude to convet properly
+                        dec_str = psr_utils.coord_to_string(-1*( dec // 10000), dec % 10000 // 100, dec % 10000 % 100)
+                    start_MJD = rawdatafile.tstart
+                    T = rawdatafile.nspec * rawdatafile.dt
+                else:
+                    telescope = rawdatafile.specinfo.telescope
+                    ra_str = rawdatafile.specinfo.ra_str
+                    dec_str = rawdatafile.specinfo.dec_str
+                    start_MJD =rawdatafile.specinfo.start_MJD[0]
+                    T = rawdatafile.specinfo.T
+                    
+                text_array = np.array([args[0], telescope, ra_str, dec_str, start_MJD, \
                                        rank, spdcand.nsub, spdcand.nbins, spdcand.subdm, \
                                        spdcand.sigma, spdcand.sample_number, spdcand.duration, \
                                        spdcand.width_bins, spdcand.pulse_width, rawdatafile.tsamp,\
-                                       rawdatafile.specinfo.T, spdcand.topo_start_time, data.starttime, \
+                                       T, spdcand.topo_start_time, data.starttime, \
                                        data.dt,data.numspectra, data.freqs.min(), data.freqs.max()])
 
                 #### Array for plotting Dedispersed waterfall plot zerodm - ON
@@ -155,8 +188,8 @@ def make_spd_from_file(spdcand, rawdatafile, \
                                            spdcand.scaleindep, spdcand.width_bins, \
                                            spdcand.mask, maskfile, spdcand.bandpass_corr)
                 ####Sweeped without zerodm
-                spdcand.read_from_file(values[ii], rawdatafile.tsamp, rawdatafile.specinfo.N, \
-                                      rawdatafile.frequencies[0], rawdatafile.frequencies[-1], \
+                # Corrected passing the metadata directly
+                spdcand.read_from_file(values[ii], tsamp, nchans, freq_hi, freq_lo, \
                                       rawdatafile, loc_pulse=loc_pulse, dedisp = None, \
                                       scaleindep = None, zerodm = None, mask = mask, \
                                       barytime=barytime, \
