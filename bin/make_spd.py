@@ -24,7 +24,7 @@ from presto.singlepulse import plot_spd  # it now imports the module insted of t
 from presto.singlepulse import spcand as spcand
 from presto.singlepulse import spio as spio
 from presto import psrfits
-from presto import filterbank
+from presto import filterbank, sigproc
 
 
 DEBUG = True
@@ -151,9 +151,9 @@ def make_spd_from_file(spdcand, rawdatafile, \
                 # Choose meta data based on filetype
                 # This way the data is passed correctly for .fil and .psrfits
                 if rawdatafile.filename.endswith(".fil"):
-                    # Telescope name is hardcoded because filterbank doesn't read if from the header
-                    # What to change in the filterbank.py so that it does read it ???
-                    telescope = "GBT"  
+                    # Get telescope name from sigproc mapping
+                    telID = rawdatafile.telescope_id
+                    telescope = sigproc.ids_to_telescope[telID]
                     ra = rawdatafile.src_raj
                     dec = rawdatafile.src_dej
                     # Above are floats need to convert to str for the array, done below
