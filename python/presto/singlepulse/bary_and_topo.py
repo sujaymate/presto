@@ -10,6 +10,7 @@ from __future__ import print_function
 from presto.presto.prestoswig import *
 import numpy as Num
 from presto import psr_utils
+from presto import psr_constants
 from presto import psrfits
 # add filterbank module
 from presto import filterbank
@@ -52,7 +53,7 @@ def bary_to_topo(infofilenm, rawdatafile=False, ephem="DE200"):
        T = obs.N * obs.dt
        dt = 10.0
        tto = obs.mjd_i + obs.mjd_f
-       tts = Num.arange(tto, tto + (T + dt) / psr_utils.SECPERDAY, dt / psr_utils.SECPERDAY)
+       tts = Num.arange(tto, tto + (T + dt) / psr_constants.SECPERDAY, dt / psr_constants.SECPERDAY)
        nn = len(tts)
        bts = Num.zeros(nn, 'd')
        vel = Num.zeros(nn, 'd')
@@ -74,7 +75,7 @@ def bary_to_topo(infofilenm, rawdatafile=False, ephem="DE200"):
        tto = rawdatafile.specinfo.start_MJD[0]
        # Actually psr_utils.SECPERDAY throws an error hence I have hardcoded that in the
        # filterbank case, maybe it should be updated here as well???
-       tts = Num.arange(tto, tto + (T + dt) / psr_utils.SECPERDAY, dt / psr_utils.SECPERDAY)
+       tts = Num.arange(tto, tto + (T + dt) / psr_constants.SECPERDAY, dt / psr_constants.SECPERDAY)
        nn = len(tts)
        bts = Num.zeros(nn, 'd')
        vel = Num.zeros(nn, 'd')
@@ -99,7 +100,7 @@ def bary_to_topo(infofilenm, rawdatafile=False, ephem="DE200"):
        T = rawdatafile.nspec * rawdatafile.dt
        dt = 10.0
        tto = rawdatafile.tstart
-       tts = Num.arange(tto, tto + (T + dt) / 86400, dt / 86400)  # 86400 are seconds per day
+       tts = Num.arange(tto, tto + (T + dt) / psr_constants.SECPERDAY, dt / psr_constants.SECPERDAY)
        nn = len(tts)
        bts = Num.zeros(nn, 'd')
        vel = Num.zeros(nn, 'd')
@@ -120,5 +121,5 @@ def bary_to_topo(infofilenm, rawdatafile=False, ephem="DE200"):
    barycenter(tts, bts, vel, ra, dec, tel, ephem)
    avgvel = Num.add.reduce(vel) / nn
    tts = Num.arange(nn, dtype='d') * dt
-   bts = (bts - bts[0]) * 86400  # 86400 are seconds per day
+   bts = (bts - bts[0]) * psr_constants.SECPERDAY
    return tts, bts
