@@ -13,7 +13,7 @@ from presto import psr_utils
 from presto import psr_constants
 from presto import psrfits
 # add filterbank module
-from presto import filterbank
+from presto import filterbank, sigproc
 import warnings
 
 
@@ -64,6 +64,7 @@ def bary_to_topo(infofilenm, rawdatafile=False, ephem="DE200"):
        elif (obs.telescope == 'Arecibo'):  tel = 'AO'
        elif (obs.telescope == 'MMT'):  tel = 'MT'
        elif (obs.telescope == 'GBT'):  tel = 'GB'
+       elif (obs.telescope == 'CHIME'): tel = 'CH'
        else:
           print("Telescope not recognized.")
           return 0
@@ -86,6 +87,7 @@ def bary_to_topo(infofilenm, rawdatafile=False, ephem="DE200"):
        elif (rawdatafile.specinfo.telescope == 'Arecibo'):  tel = 'AO'
        elif (rawdatafile.specinfo.telescope == 'MMT'):  tel = 'MT'
        elif (rawdatafile.specinfo.telescope == 'GBT'):  tel = 'GB'
+       elif (rawdatafile.specinfo.telescope == 'CHIME'): tel = 'CH'
        else:
           print("Telescope not recognized.")
           return 0
@@ -112,12 +114,20 @@ def bary_to_topo(infofilenm, rawdatafile=False, ephem="DE200"):
        elif dec_j < 0:
            dec_j = -1*dec_j  # take the magnitude to convet properly
            dec = psr_utils.coord_to_string(-1*( dec_j // 10000), dec_j % 10000 // 100, dec_j % 10000 % 100)
-       tel = 'GB'
-       warnings.warn("Barycenter time will be wrong because telescope name header not read correctly.\
-                     Assuming GBT as the telescope location")
-
-   # There was a mismatch in number of parameters passed to barycenter function. 
-   # I think this must be crashing for psrfits as well !!
+       
+       # Get telescope name from the telescope ID in the header        
+       telID = rawdatafile.telescope_id
+       telescope = sigproc.ids_to_telescope[telID]
+       if (telescope == 'Parkes'):  tel = 'PK'
+       elif (telescope == 'Effelsberg'):  tel = 'EB'
+       elif (telescope == 'Arecibo'):  tel = 'AO'
+       elif (telescope == 'MMT'):  tel = 'MT'
+       elif (telescope == 'GBT'):  tel = 'GB'
+       elif (telescope == 'CHIME'): tel = 'CH'
+       else:
+          print("Telescope not recognized.")
+          return 0
+   
    barycenter(tts, bts, vel, ra, dec, tel, ephem)
    avgvel = Num.add.reduce(vel) / nn
    tts = Num.arange(nn, dtype='d') * dt
