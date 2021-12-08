@@ -307,14 +307,44 @@ def make_spd_from_man_params(spdcand, rawdatafile, \
        Binary npz file containing the necessary arrays and header information to generate the spd plots.
     """
     rank = None
+    
+    # Choose meta data based on filetype
+    # This way the data is passed correctly for .fil and .psrfits
+    tsamp = rawdatafile.tsamp
+    freq_hi = rawdatafile.frequencies[0]
+    freq_lo = rawdatafile.frequencies[-1]
+    
+    if rawdatafile.filename.endswith(".fil"):
+        nchans = rawdatafile.nchans
+        # Get telescope name from sigproc mapping
+        telID = rawdatafile.telescope_id
+        telescope = sigproc.ids_to_telescope[telID]
+        ra = rawdatafile.src_raj
+        dec = rawdatafile.src_dej
+        # Above are floats need to convert to str for the array, done below
+        ra_str = psr_utils.coord_to_string(ra // 10000, ra % 10000 // 100, ra % 10000 % 100)
+        if dec > 0:
+            dec_str = psr_utils.coord_to_string(dec // 10000, dec % 10000 // 100, dec % 10000 % 100)
+        elif dec < 0:
+            dec = -1*dec  # take the magnitude to convet properly
+            dec_str = psr_utils.coord_to_string(-1*( dec // 10000), dec % 10000 // 100, dec % 10000 % 100)
+        start_MJD = rawdatafile.tstart
+        T = rawdatafile.nspec * rawdatafile.dt
+    else:
+        nchans = rawdatafile.specinfo.N
+        telescope = rawdatafile.specinfo.telescope
+        ra_str = rawdatafile.specinfo.ra_str
+        dec_str = rawdatafile.specinfo.dec_str
+        start_MJD =rawdatafile.specinfo.start_MJD[0]
+        T = rawdatafile.specinfo.T
+                    
     if not nsub:
-        nsub = rawdatafile.nchan
+        nsub = nchans
 
     # Array for Plotting Dedispersed waterfall plot - zerodm - OFF
     spdcand.manual_params(subdm, dm, sweep_dm, sigma, start_time, \
-                         width_bins, downsamp, duration, nbins, nsub, rawdatafile.tsamp, \
-                         rawdatafile.specinfo.N, \
-                         rawdatafile.frequencies[0], rawdatafile.frequencies[-1], rawdatafile, \
+                         width_bins, downsamp, duration, nbins, nsub, tsamp, nchans, \
+                         freq_hi, freq_lo, rawdatafile, \
                          loc_pulse=loc_pulse, dedisp=True, scaleindep=False, zerodm=False, \
                          mask=mask, barytime=barytime, bandpass_corr=bandpass_corr)
     #make an array to store header information for the spd files
@@ -327,13 +357,13 @@ def make_spd_from_man_params(spdcand, rawdatafile, \
                                  spdcand.scaleindep, spdcand.width_bins, \
                                  spdcand.mask, maskfile, spdcand.bandpass_corr)
     # Add additional information to the header information array
-    text_array = np.array([args[0], rawdatafile.specinfo.telescope, \
-                           rawdatafile.specinfo.ra_str, rawdatafile.specinfo.dec_str, \
-                           rawdatafile.specinfo.start_MJD[0], rank, \
+    text_array = np.array([args[0], telescope, \
+                           ra_str, dec_str, \
+                           start_MJD, rank, \
                            spdcand.nsub, spdcand.nbins, \
                            spdcand.subdm, spdcand.sigma, spdcand.sample_number, \
                            spdcand.duration, spdcand.width_bins, spdcand.pulse_width, \
-                           rawdatafile.tsamp, rawdatafile.specinfo.T, spdcand.topo_start_time, \
+                           tsamp, T, spdcand.topo_start_time, \
                            data.starttime, data.dt,data.numspectra, data.freqs.min(), \
                            data.freqs.max()])
 
@@ -347,9 +377,8 @@ def make_spd_from_man_params(spdcand, rawdatafile, \
                                  spdcand.mask, maskfile, spdcand.bandpass_corr)
     ####Sweeped without zerodm
     spdcand.manual_params(subdm, dm, sweep_dm, sigma, start_time, \
-                          width_bins, downsamp, duration, nbins, nsub, rawdatafile.tsamp, \
-                          rawdatafile.specinfo.N, \
-                          rawdatafile.frequencies[0], rawdatafile.frequencies[-1], rawdatafile, \
+                          width_bins, downsamp, duration, nbins, nsub, tsamp, nchans, \
+                          freq_hi, freq_lo, rawdatafile, \
                           loc_pulse=loc_pulse, dedisp=None, scaleindep=None, zerodm=None, mask=mask, \
                           barytime=barytime, bandpass_corr=bandpass_corr)
     data, Data_nozerodm = waterfall_array(rawdatafile, spdcand.start, \
