@@ -316,8 +316,8 @@ def main():
     overlap = (fftlen - chunklen) // 2
     worklen = chunklen + 2*overlap  # currently it is fftlen...
 
-    max_downfact = 30
-    default_downfacts = [2, 3, 4, 6, 9, 14, 20, 30, 45, 70, 100, 150, 220, 300]
+    max_downfact = 16
+    default_downfacts = [2, 4, 8, 16]
 
     if args[0].endswith(".singlepulse"):
         filenmbase = args[0][:args[0].rfind(".singlepulse")]
