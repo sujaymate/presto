@@ -379,6 +379,14 @@ def main():
             # Read in the file
             print('Reading "%s"...'%filenm)
             timeseries = np.fromfile(filenm, dtype=np.float32, count=roundN)
+
+            # Check for inf or nan and log the crash
+            if np.isnan(timeseries).any() or np.isinf(timeseries).any():
+                fail_lof_fname = filenmbase.split("_DM")[0] + "_failed.log"
+                fail_log = open(fail_lof_fname, "a")
+                fail_log.write(filenmbase)
+                fail_log.close()
+
             # Split the timeseries into chunks for detrending
             numblocks = roundN // detrendlen
             timeseries.shape = (numblocks, detrendlen)
