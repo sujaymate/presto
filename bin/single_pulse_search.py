@@ -386,6 +386,8 @@ def main():
                 fail_log = open(fail_lof_fname, "a")
                 fail_log.write(filenmbase)
                 fail_log.close()
+                
+                continue
 
             # Split the timeseries into chunks for detrending
             numblocks = roundN // detrendlen
