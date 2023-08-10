@@ -384,7 +384,7 @@ def main():
             if np.isnan(timeseries).any() or np.isinf(timeseries).any():
                 fail_lof_fname = filenmbase.split("_DM")[0] + "_failed.log"
                 fail_log = open(fail_lof_fname, "a")
-                fail_log.write(filenmbase)
+                fail_log.write(filenmbase + ".dat\n")
                 fail_log.close()
                 
                 continue
