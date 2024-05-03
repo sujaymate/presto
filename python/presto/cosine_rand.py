@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 from future import standard_library
 standard_library.install_aliases()
 import numpy as Num
@@ -41,7 +39,7 @@ def cosine_rand(num):
           as per a sinusoid with maximum at phase=0 (0 < phase < 1).
     """
     rands = n*Num.random.random(num)
-    indices = rands.astype(Num.int)
+    indices = rands.astype(int)
     fracts = rands-indices
     lo = Num.take(xs, indices)
     hi = Num.take(xs, indices+1)
@@ -55,9 +53,9 @@ if __name__ == '__main__':
         for funct in [cosine_rand1, cosine_rand2]:
             times = []
             for jj in range(numtrials):
-                tt = time.clock()
+                tt = time.perf_counter()
                 funct(numrandnums)
-                times.append(time.clock()-tt)
+                times.append(time.perf_counter()-tt)
             print("Average time = ", Num.add.reduce(Num.asarray(times))/numtrials)
     else:
         rs = Num.arange(n+1, dtype=float)/n
