@@ -318,8 +318,8 @@ def main():
     overlap = (fftlen - chunklen) // 2
     worklen = chunklen + 2*overlap  # currently it is fftlen...
 
-    max_downfact = 30
-    default_downfacts = [2, 3, 4, 6, 9, 14, 20, 30, 45, 70, 100, 150, 220, 300]
+    max_downfact = 16
+    default_downfacts = [2, 4, 8, 16]
 
     if args[0].endswith(".singlepulse") or args[0].endswith(".singlepulse.gz"):
         filenmbase = args[0][:args[0].rfind(".singlepulse")]
@@ -379,6 +379,16 @@ def main():
             # Read in the file
             print('Reading "%s"...'%filenm)
             timeseries = np.fromfile(filenm, dtype=np.float32, count=roundN)
+
+            # Check for inf or nan and log the crash
+            if np.isnan(timeseries).any() or np.isinf(timeseries).any():
+                fail_lof_fname = filenmbase.split("_DM")[0] + "_failed.log"
+                fail_log = open(fail_lof_fname, "a")
+                fail_log.write(filenmbase + ".dat\n")
+                fail_log.close()
+                
+                continue
+
             # Split the timeseries into chunks for detrending
             numblocks = roundN // detrendlen
             timeseries.shape = (numblocks, detrendlen)
